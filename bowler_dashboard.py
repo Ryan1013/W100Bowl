@@ -710,9 +710,9 @@ else:
 # CENTERED LENGTH EVALUATION (Below Pitch Map)
 # ---------------------------------------------------
 
-if "Analyst Pitch Length" in filtered.columns:
+if "PitchX" in filtered.columns:
 
-    length_series = filtered["Analyst Pitch Length"].dropna()
+    length_series = filtered["PitchX"].dropna()
 
     if len(length_series) > 0:
 
@@ -766,20 +766,87 @@ else:
 
 st.subheader("Beehive")
 
+# -------------------------------------------------
+# Learn Coordinate Conversion
+# ArrivalX/Y  ---> Analyst Scale
+# -------------------------------------------------
+
+scale_df = outcome_filtered.dropna(
+    subset=[
+        'ArrivalX',
+        'ArrivalY',
+        'Analyst Arrival Line',
+        'Analyst Arrival Height'
+    ]
+)
+
+# Default fallback
+outcome_filtered['Final Arrival Line'] = (
+    outcome_filtered['Analyst Arrival Line']
+)
+
+outcome_filtered['Final Arrival Height'] = (
+    outcome_filtered['Analyst Arrival Height']
+)
+
+# Learn transformation if overlap exists
+if len(scale_df) > 10:
+
+    # X conversion
+    line_m, line_c = np.polyfit(
+        scale_df['ArrivalX'],
+        scale_df['Analyst Arrival Line'],
+        1
+    )
+
+    # Y conversion
+    height_m, height_c = np.polyfit(
+        scale_df['ArrivalY'],
+        scale_df['Analyst Arrival Height'],
+        1
+    )
+
+    # Convert ArrivalX/Y to analyst scale
+    converted_line = (
+        outcome_filtered['ArrivalX'] * line_m + line_c
+    )
+
+    converted_height = (
+        outcome_filtered['ArrivalY'] * height_m + height_c
+    )
+
+    # PRIORITISE ArrivalX/Y IF AVAILABLE
+    outcome_filtered['Final Arrival Line'] = np.where(
+        outcome_filtered['ArrivalX'].notna(),
+        converted_line,
+        outcome_filtered['Analyst Arrival Line']
+    )
+
+    outcome_filtered['Final Arrival Height'] = np.where(
+        outcome_filtered['ArrivalY'].notna(),
+        converted_height,
+        outcome_filtered['Analyst Arrival Height']
+    )
+
+# -------------------------------------------------
+# Beehive Dataset
+# -------------------------------------------------
+
 beehive_data = outcome_filtered[
-    outcome_filtered['Analyst Arrival Line'].notna() &
-    outcome_filtered['Analyst Arrival Height'].notna()
+    outcome_filtered['Final Arrival Line'].notna() &
+    outcome_filtered['Final Arrival Height'].notna()
 ].copy()
 
 if len(beehive_data) > 0:
 
     fig = go.Figure()
+
     img = Image.open("BA Beehive.png")
 
     x_min_m = -1.83
-    x_max_m =  1.83
-    y_min_m =  0
-    y_max_m =  2.0
+    x_max_m = 1.83
+    y_min_m = 0
+    y_max_m = 2.0
 
     fig.add_layout_image(
         dict(
@@ -815,40 +882,48 @@ if len(beehive_data) > 0:
         ]
 
         if len(subset) > 0:
-            fig.add_trace(go.Scatter(
-                x=subset['Analyst Arrival Line'],
-                y=subset['Analyst Arrival Height'],
-                mode="markers",
-                marker=dict(
-                    size=12 if run_value == 6
-                         else 10 if run_value == 4
-                         else 8,
-                    color=colour,
-                    line=dict(width=1, color="black")
-                ),
-                name=f"{run_value} Runs"
-            ))
+
+            fig.add_trace(
+                go.Scatter(
+                    x=subset['Final Arrival Line'],
+                    y=subset['Final Arrival Height'],
+                    mode="markers",
+                    marker=dict(
+                        size=12 if run_value == 6
+                             else 10 if run_value == 4
+                             else 8,
+                        color=colour,
+                        line=dict(width=1, color="black")
+                    ),
+                    name=f"{run_value} Runs"
+                )
+            )
 
     # ---------------- WIDES ---------------- #
 
     if "Wide" in selected_pitch_options:
 
         wides = beehive_data[
-            beehive_data["Extra"].astype(str).str.contains("Wide", case=False, na=False)
+            beehive_data["Extra"]
+            .astype(str)
+            .str.contains("Wide", case=False, na=False)
         ]
 
         if len(wides) > 0:
-            fig.add_trace(go.Scatter(
-                x=wides['Analyst Arrival Line'],
-                y=wides['Analyst Arrival Height'],
-                mode="markers",
-                marker=dict(
-                    size=8,
-                    color="#8A2BE2",
-                    line=dict(width=1, color="black")
-                ),
-                name="Wide"
-            ))
+
+            fig.add_trace(
+                go.Scatter(
+                    x=wides['Final Arrival Line'],
+                    y=wides['Final Arrival Height'],
+                    mode="markers",
+                    marker=dict(
+                        size=8,
+                        color="#8A2BE2",
+                        line=dict(width=1, color="black")
+                    ),
+                    name="Wide"
+                )
+            )
 
     # ---------------- DISMISSALS ---------------- #
 
@@ -859,26 +934,40 @@ if len(beehive_data) > 0:
         ]
 
         if len(dismissals) > 0:
-            fig.add_trace(go.Scatter(
-                x=dismissals['Analyst Arrival Line'],
-                y=dismissals['Analyst Arrival Height'],
-                mode="markers",
-                marker=dict(
-                    symbol="x",
-                    size=14,
-                    color="black",
-                    line=dict(width=2)
-                ),
-                name="Dismissal"
-            ))
+
+            fig.add_trace(
+                go.Scatter(
+                    x=dismissals['Final Arrival Line'],
+                    y=dismissals['Final Arrival Height'],
+                    mode="markers",
+                    marker=dict(
+                        symbol="x",
+                        size=14,
+                        color="black",
+                        line=dict(width=2)
+                    ),
+                    name="Dismissal"
+                )
+            )
 
     # ---------------- LAYOUT ---------------- #
 
     fig.update_layout(
         height=750,
-        xaxis=dict(range=[x_min_m, x_max_m], visible=False),
-        yaxis=dict(range=[y_min_m, y_max_m], visible=False),
-        margin=dict(l=0, r=0, t=20, b=20),
+        xaxis=dict(
+            range=[x_min_m, x_max_m],
+            visible=False
+        ),
+        yaxis=dict(
+            range=[y_min_m, y_max_m],
+            visible=False
+        ),
+        margin=dict(
+            l=0,
+            r=0,
+            t=20,
+            b=20
+        ),
         dragmode=False
     )
 
@@ -908,25 +997,41 @@ else:
 # ---------------------------------------------------
 
 def in_business_area(line, height, hand):
+
     if pd.isna(line) or pd.isna(height) or pd.isna(hand):
         return False
+
     if hand == "RHB":
-        return (height <= 1.0) and (-0.35 <= line <= 0.15)
+        return (
+            (height <= 1.0) and
+            (-0.35 <= line <= 0.15)
+        )
+
     elif hand == "LHB":
-        return (height <= 1.0) and (-0.10 <= line <= 0.40)
+        return (
+            (height <= 1.0) and
+            (-0.10 <= line <= 0.40)
+        )
+
     return False
+
+
+# ---------------------------------------------------
+# USE SAME COORDINATES AS BEEHIVE PLOTTING
+# ---------------------------------------------------
 
 filtered["In Business Area"] = filtered.apply(
     lambda r: in_business_area(
-        r.get("Analyst Arrival Line"),
-        r.get("Analyst Arrival Height"),
+        r.get("Final Arrival Line"),
+        r.get("Final Arrival Height"),
         r.get("Batting Hand")
     ),
     axis=1
 )
 
 filtered["Bowler Wicket in BA"] = (
-    filtered["In Business Area"] & (filtered["Bowler Wicket"] == 1)
+    filtered["In Business Area"] &
+    (filtered["Bowler Wicket"] == 1)
 )
 
 # ---------------------------------------------------
