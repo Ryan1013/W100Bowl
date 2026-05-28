@@ -768,25 +768,27 @@ else:
 st.subheader("Beehive")
 
 # -------------------------------------------------
-# FINAL ARRIVAL COORDINATES
+# USE SAME COORDINATE SYSTEM FOR BOTH AXES
 # -------------------------------------------------
 # PRIORITY:
 #
-# 1. ImpactY / ImpactZ (machine tracked)
-# 2. Analyst Arrival Line / Height (fallback)
-#
-# These are already on very similar cricket-space
-# scales, so no conversion is required.
+# 1. Use BOTH ImpactY + ImpactZ together
+# 2. Otherwise use BOTH Analyst values together
 # -------------------------------------------------
 
+tracked_available = (
+    outcome_filtered['ImpactY'].notna() &
+    outcome_filtered['ImpactZ'].notna()
+)
+
 outcome_filtered['Final Arrival Line'] = np.where(
-    outcome_filtered['ImpactY'].notna(),
+    tracked_available,
     outcome_filtered['ImpactY'],
     outcome_filtered['Analyst Arrival Line']
 )
 
 outcome_filtered['Final Arrival Height'] = np.where(
-    outcome_filtered['ImpactZ'].notna(),
+    tracked_available,
     outcome_filtered['ImpactZ'],
     outcome_filtered['Analyst Arrival Height']
 )
@@ -1028,19 +1030,48 @@ def in_business_area(line, height, hand):
     return False
 
 # ---------------------------------------------------
-# CREATE SAME FINAL COORDINATES IN FILTERED DATAFRAME
+# USE SAME COORDINATE SYSTEM AS BEEHIVE
+# ---------------------------------------------------
+# PRIORITY:
+#
+# 1. Use BOTH ImpactY + ImpactZ together
+# 2. Otherwise use BOTH Analyst values together
 # ---------------------------------------------------
 
+tracked_available = (
+    filtered['ImpactY'].notna() &
+    filtered['ImpactZ'].notna()
+)
+
 filtered['Final Arrival Line'] = np.where(
-    filtered['ImpactY'].notna(),
+    tracked_available,
     filtered['ImpactY'],
     filtered['Analyst Arrival Line']
 )
 
 filtered['Final Arrival Height'] = np.where(
-    filtered['ImpactZ'].notna(),
+    tracked_available,
     filtered['ImpactZ'],
     filtered['Analyst Arrival Height']
+)
+
+# IMPORTANT:
+# Flip horizontal direction to match analyst plotting space
+
+filtered['Final Arrival Line'] = (
+    filtered['Final Arrival Line'] * -1
+)
+
+# Optional clipping
+
+filtered['Final Arrival Line'] = (
+    filtered['Final Arrival Line']
+    .clip(-1.83, 1.83)
+)
+
+filtered['Final Arrival Height'] = (
+    filtered['Final Arrival Height']
+    .clip(0, 2.0)
 )
 
 # IMPORTANT:
