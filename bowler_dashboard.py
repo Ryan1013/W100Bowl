@@ -1015,14 +1015,14 @@ def in_business_area(line, height, hand):
 
         return (
             (height <= 1.0) and
-            (-0.35 <= line <= 0.15)
+            (-0.15 <= line <= 0.35)
         )
 
     elif hand == "LHB":
 
         return (
             (height <= 1.0) and
-            (-0.10 <= line <= 0.40)
+            (-0.40 <= line <= 0.10)
         )
 
     return False
