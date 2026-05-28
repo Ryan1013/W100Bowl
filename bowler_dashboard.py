@@ -1119,42 +1119,42 @@ if len(bowler_ba_stats) > 0:
     ) if total_deliveries > 0 else 0
 
     left, center, right = st.columns([1, 2, 1])
-
+    
     with center:
+      
+      st.markdown(
+        f"""
+        <div style="text-align:center; margin-top:-15px;">
 
-        st.markdown(
-            f"""
-            <div style="text-align:center; margin-top:-15px;">
-
-                <div style="
-                    font-size:20px;
-                    font-weight:600;
-                    margin-bottom:2px;
-                ">
-                    % of Deliveries in Business Area (BA) / Around Stumps
-                </div>
-
-                <div style="
-                    font-size:48px;
-                    font-weight:700;
-                    line-height:1;
-                ">
-                    {ba_percent}
-                </div>
-
-                <div style="
-                    font-size:28px;
-                    color:#555;
-                    margin-top:4px;
-                ">
-                    {total_ba_wickets}/{total_wickets}
-                    Wickets in BA / Around Stumps
-                </div>
-
+            <div style="
+                font-size:20px;
+                font-weight:600;
+                margin-bottom:2px;
+            ">
+                % of Deliveries in Business Area (BA) / Around Stumps
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+
+            <div style="
+                font-size:48px;
+                font-weight:700;
+                line-height:1;
+            ">
+                {ba_percent}
+            </div>
+
+            <div style="
+                font-size:28px;
+                color:#555;
+                margin-top:4px;
+            ">
+                {total_ba_wickets}/{total_wickets}
+                Wickets in BA / Around Stumps
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 else:
     st.info("No Business Area data available.")
