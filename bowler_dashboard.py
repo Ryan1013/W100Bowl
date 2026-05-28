@@ -1118,11 +1118,11 @@ if len(bowler_ba_stats) > 0:
         2
     ) if total_deliveries > 0 else 0
 
-    left, center, right = st.columns([1, 2, 1])
-    
-    with center:
-      
-      st.markdown(
+left, center, right = st.columns([1, 2, 1])
+
+with center:
+
+    st.markdown(
         f"""
         <div style="text-align:center; margin-top:-15px;">
 
@@ -1155,9 +1155,6 @@ if len(bowler_ba_stats) > 0:
         """,
         unsafe_allow_html=True
     )
-
-else:
-    st.info("No Business Area data available.")
 
 # ---------------- VIDEO SECTION ---------------- #
 
