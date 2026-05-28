@@ -1007,23 +1007,73 @@ else:
 # ---------------------------------------------------
 
 def in_business_area(line, height, hand):
+
     if pd.isna(line) or pd.isna(height) or pd.isna(hand):
         return False
+
     if hand == "RHB":
-        return (height <= 1.0) and (-0.35 <= line <= 0.15)
+
+        return (
+            (height <= 1.0) and
+            (-0.35 <= line <= 0.15)
+        )
+
     elif hand == "LHB":
-        return (height <= 1.0) and (-0.10 <= line <= 0.40)
+
+        return (
+            (height <= 1.0) and
+            (-0.10 <= line <= 0.40)
+        )
+
     return False
+
+# ---------------------------------------------------
+# CREATE SAME FINAL COORDINATES IN FILTERED DATAFRAME
+# ---------------------------------------------------
+
+filtered['Final Arrival Line'] = np.where(
+    filtered['ImpactY'].notna(),
+    filtered['ImpactY'],
+    filtered['Analyst Arrival Line']
+)
+
+filtered['Final Arrival Height'] = np.where(
+    filtered['ImpactZ'].notna(),
+    filtered['ImpactZ'],
+    filtered['Analyst Arrival Height']
+)
+
+# IMPORTANT:
+# Tracking system uses opposite horizontal direction
+
+filtered['Final Arrival Line'] = (
+    filtered['Final Arrival Line'] * -1
+)
+
+# Optional clipping
+
+filtered['Final Arrival Line'] = (
+    filtered['Final Arrival Line']
+    .clip(-1.83, 1.83)
+)
+
+filtered['Final Arrival Height'] = (
+    filtered['Final Arrival Height']
+    .clip(0, 2.0)
+)
+
+# ---------------------------------------------------
+# BUSINESS AREA FLAGS
+# ---------------------------------------------------
 
 filtered["In Business Area"] = filtered.apply(
     lambda r: in_business_area(
-        r.get("Final Arrival Line"),
-        r.get("Final Arrival Height"),
-        r.get("Batting Hand")
+        r["Final Arrival Line"],
+        r["Final Arrival Height"],
+        r["Batting Hand"]
     ),
     axis=1
 )
-
 filtered["Bowler Wicket in BA"] = (
     filtered["In Business Area"] & (filtered["Bowler Wicket"] == 1)
 )
