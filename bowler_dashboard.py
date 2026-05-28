@@ -405,6 +405,16 @@ selected_venues = st.sidebar.multiselect(
     default=venues
 )
 
+# ---------------- BATTING HAND FILTER ---------------- #
+
+hands = sorted(data['Batting Hand'].dropna().unique())
+
+selected_hands = st.sidebar.multiselect(
+    "Batting Hand",
+    hands,
+    default=hands
+)
+
 # ---------------------------------------------------
 # APPLY FILTERS
 # ---------------------------------------------------
@@ -429,6 +439,9 @@ if selected_phases:
 
 if selected_venues:
     filtered = filtered[filtered['Venue'].isin(selected_venues)]
+
+if selected_hands:
+    filtered = filtered[filtered['Batting Hand'].isin(selected_hands)]
 
 # ---------------------------------------------------
 # GLOBAL OUTCOME FILTER
