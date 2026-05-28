@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 from PIL import Image
 
@@ -1014,7 +1015,6 @@ def in_business_area(line, height, hand):
         )
 
     return False
-
 
 # ---------------------------------------------------
 # USE SAME COORDINATES AS BEEHIVE PLOTTING
