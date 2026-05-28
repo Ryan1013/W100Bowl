@@ -1012,12 +1012,14 @@ def in_business_area(line, height, hand):
         return False
 
     if hand == "RHB":
+
         return (
             (height <= 1.0) and
             (-0.35 <= line <= 0.15)
         )
 
     elif hand == "LHB":
+
         return (
             (height <= 1.0) and
             (-0.10 <= line <= 0.40)
@@ -1026,7 +1028,12 @@ def in_business_area(line, height, hand):
     return False
 
 # ---------------------------------------------------
-# USE SAME COORDINATES AS BEEHIVE
+# USE SAME COORDINATE SYSTEM AS BEEHIVE
+# ---------------------------------------------------
+# PRIORITY:
+#
+# 1. ImpactY / ImpactZ (machine tracked)
+# 2. Analyst Arrival Line / Height (fallback)
 # ---------------------------------------------------
 
 filtered['Final Arrival Line'] = np.where(
@@ -1041,6 +1048,10 @@ filtered['Final Arrival Height'] = np.where(
     filtered['Analyst Arrival Height']
 )
 
+# ---------------------------------------------------
+# OPTIONAL CLIPPING
+# ---------------------------------------------------
+
 filtered['Final Arrival Line'] = (
     filtered['Final Arrival Line']
     .clip(-1.83, 1.83)
@@ -1051,14 +1062,22 @@ filtered['Final Arrival Height'] = (
     .clip(0, 2.0)
 )
 
+# ---------------------------------------------------
+# BUSINESS AREA FLAG
+# ---------------------------------------------------
+
 filtered["In Business Area"] = filtered.apply(
     lambda r: in_business_area(
-        r.get("Final Arrival Line"),
-        r.get("Final Arrival Height"),
-        r.get("Batting Hand")
+        r["Final Arrival Line"],
+        r["Final Arrival Height"],
+        r["Batting Hand"]
     ),
     axis=1
 )
+
+# ---------------------------------------------------
+# BUSINESS AREA WICKETS
+# ---------------------------------------------------
 
 filtered["Bowler Wicket in BA"] = (
     filtered["In Business Area"] &
@@ -1073,12 +1092,19 @@ bowler_ba_stats = (
     filtered.groupby("Bowler")
     .agg(
         Total_Deliveries=("Ball", "count"),
+
         BA_Deliveries=("In Business Area", "sum"),
+
         Total_Wickets=("Bowler Wicket", "sum"),
+
         BA_Wickets=("Bowler Wicket in BA", "sum")
     )
     .reset_index()
 )
+
+# ---------------------------------------------------
+# BA %
+# ---------------------------------------------------
 
 bowler_ba_stats["BA %"] = round(
     (
@@ -1088,17 +1114,31 @@ bowler_ba_stats["BA %"] = round(
     2
 )
 
-# ---------------- BUSINESS AREA SUMMARY ---------------- #
+# ---------------------------------------------------
+# BUSINESS AREA SUMMARY
+# ---------------------------------------------------
 
 if len(bowler_ba_stats) > 0:
 
-    total_deliveries = bowler_ba_stats["Total_Deliveries"].sum()
+    total_deliveries = (
+        bowler_ba_stats["Total_Deliveries"]
+        .sum()
+    )
 
-    total_ba = bowler_ba_stats["BA_Deliveries"].sum()
+    total_ba = (
+        bowler_ba_stats["BA_Deliveries"]
+        .sum()
+    )
 
-    total_wickets = bowler_ba_stats["Total_Wickets"].sum()
+    total_wickets = (
+        bowler_ba_stats["Total_Wickets"]
+        .sum()
+    )
 
-    total_ba_wickets = bowler_ba_stats["BA_Wickets"].sum()
+    total_ba_wickets = (
+        bowler_ba_stats["BA_Wickets"]
+        .sum()
+    )
 
     ba_percent = round(
         (total_ba / total_deliveries) * 100,
@@ -1111,7 +1151,10 @@ if len(bowler_ba_stats) > 0:
 
         st.markdown(
             f"""
-            <div style="text-align:center; margin-top:-15px;">
+            <div style="
+                text-align:center;
+                margin-top:-15px;
+            ">
 
                 <div style="
                     font-size:20px;
