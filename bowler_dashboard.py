@@ -776,19 +776,14 @@ st.subheader("Beehive")
 # 2. Otherwise use BOTH Analyst values together
 # -------------------------------------------------
 
-tracked_available = (
-    outcome_filtered['ImpactY'].notna() &
-    outcome_filtered['ImpactZ'].notna()
-)
-
 outcome_filtered['Final Arrival Line'] = np.where(
-    tracked_available,
+    outcome_filtered['ImpactY'].notna(),
     outcome_filtered['ImpactY'],
     outcome_filtered['Analyst Arrival Line']
 )
 
 outcome_filtered['Final Arrival Height'] = np.where(
-    tracked_available,
+    outcome_filtered['ImpactZ'].notna(),
     outcome_filtered['ImpactZ'],
     outcome_filtered['Analyst Arrival Height']
 )
@@ -1030,48 +1025,19 @@ def in_business_area(line, height, hand):
     return False
 
 # ---------------------------------------------------
-# USE SAME COORDINATE SYSTEM AS BEEHIVE
+# CREATE SAME FINAL COORDINATES IN FILTERED DATAFRAME
 # ---------------------------------------------------
-# PRIORITY:
-#
-# 1. Use BOTH ImpactY + ImpactZ together
-# 2. Otherwise use BOTH Analyst values together
-# ---------------------------------------------------
-
-tracked_available = (
-    filtered['ImpactY'].notna() &
-    filtered['ImpactZ'].notna()
-)
 
 filtered['Final Arrival Line'] = np.where(
-    tracked_available,
+    filtered['ImpactY'].notna(),
     filtered['ImpactY'],
     filtered['Analyst Arrival Line']
 )
 
 filtered['Final Arrival Height'] = np.where(
-    tracked_available,
+    filtered['ImpactZ'].notna(),
     filtered['ImpactZ'],
     filtered['Analyst Arrival Height']
-)
-
-# IMPORTANT:
-# Flip horizontal direction to match analyst plotting space
-
-filtered['Final Arrival Line'] = (
-    filtered['Final Arrival Line'] * -1
-)
-
-# Optional clipping
-
-filtered['Final Arrival Line'] = (
-    filtered['Final Arrival Line']
-    .clip(-1.83, 1.83)
-)
-
-filtered['Final Arrival Height'] = (
-    filtered['Final Arrival Height']
-    .clip(0, 2.0)
 )
 
 # IMPORTANT:
