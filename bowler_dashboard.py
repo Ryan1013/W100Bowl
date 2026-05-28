@@ -768,69 +768,45 @@ else:
 st.subheader("Beehive")
 
 # -------------------------------------------------
-# Learn Coordinate Conversion
-# ArrivalX/Y  ---> Analyst Scale
+# FINAL ARRIVAL COORDINATES
+# -------------------------------------------------
+# PRIORITY:
+#
+# 1. ImpactY / ImpactZ (machine tracked)
+# 2. Analyst Arrival Line / Height (fallback)
+#
+# These are already on very similar cricket-space
+# scales, so no conversion is required.
 # -------------------------------------------------
 
-scale_df = outcome_filtered.dropna(
-    subset=[
-        'ArrivalX',
-        'ArrivalY',
-        'Analyst Arrival Line',
-        'Analyst Arrival Height'
-    ]
-)
-
-# Default fallback
-outcome_filtered['Final Arrival Line'] = (
+outcome_filtered['Final Arrival Line'] = np.where(
+    outcome_filtered['ImpactY'].notna(),
+    outcome_filtered['ImpactY'],
     outcome_filtered['Analyst Arrival Line']
 )
 
-outcome_filtered['Final Arrival Height'] = (
+outcome_filtered['Final Arrival Height'] = np.where(
+    outcome_filtered['ImpactZ'].notna(),
+    outcome_filtered['ImpactZ'],
     outcome_filtered['Analyst Arrival Height']
 )
 
-# Learn transformation if overlap exists
-if len(scale_df) > 10:
+# -------------------------------------------------
+# OPTIONAL CLIPPING
+# -------------------------------------------------
 
-    # X conversion
-    line_m, line_c = np.polyfit(
-        scale_df['ArrivalX'],
-        scale_df['Analyst Arrival Line'],
-        1
-    )
+outcome_filtered['Final Arrival Line'] = (
+    outcome_filtered['Final Arrival Line']
+    .clip(-1.83, 1.83)
+)
 
-    # Y conversion
-    height_m, height_c = np.polyfit(
-        scale_df['ArrivalY'],
-        scale_df['Analyst Arrival Height'],
-        1
-    )
-
-    # Convert ArrivalX/Y to analyst scale
-    converted_line = (
-        outcome_filtered['ArrivalX'] * line_m + line_c
-    )
-
-    converted_height = (
-        outcome_filtered['ArrivalY'] * height_m + height_c
-    )
-
-    # PRIORITISE ArrivalX/Y IF AVAILABLE
-    outcome_filtered['Final Arrival Line'] = np.where(
-        outcome_filtered['ArrivalX'].notna(),
-        converted_line,
-        outcome_filtered['Analyst Arrival Line']
-    )
-
-    outcome_filtered['Final Arrival Height'] = np.where(
-        outcome_filtered['ArrivalY'].notna(),
-        converted_height,
-        outcome_filtered['Analyst Arrival Height']
-    )
+outcome_filtered['Final Arrival Height'] = (
+    outcome_filtered['Final Arrival Height']
+    .clip(0, 2.0)
+)
 
 # -------------------------------------------------
-# Beehive Dataset
+# BEEHIVE DATASET
 # -------------------------------------------------
 
 beehive_data = outcome_filtered[
@@ -846,18 +822,26 @@ if len(beehive_data) > 0:
 
     x_min_m = -1.83
     x_max_m = 1.83
+
     y_min_m = 0
     y_max_m = 2.0
+
+    # -------------------------------------------------
+    # BACKGROUND IMAGE
+    # -------------------------------------------------
 
     fig.add_layout_image(
         dict(
             source=img,
             xref="x",
             yref="y",
+
             x=x_min_m,
             y=y_max_m,
+
             sizex=(x_max_m - x_min_m),
             sizey=(y_max_m - y_min_m),
+
             sizing="stretch",
             layer="below"
         )
@@ -888,14 +872,22 @@ if len(beehive_data) > 0:
                 go.Scatter(
                     x=subset['Final Arrival Line'],
                     y=subset['Final Arrival Height'],
+
                     mode="markers",
+
                     marker=dict(
                         size=12 if run_value == 6
                              else 10 if run_value == 4
                              else 8,
+
                         color=colour,
-                        line=dict(width=1, color="black")
+
+                        line=dict(
+                            width=1,
+                            color="black"
+                        )
                     ),
+
                     name=f"{run_value} Runs"
                 )
             )
@@ -916,12 +908,19 @@ if len(beehive_data) > 0:
                 go.Scatter(
                     x=wides['Final Arrival Line'],
                     y=wides['Final Arrival Height'],
+
                     mode="markers",
+
                     marker=dict(
                         size=8,
                         color="#8A2BE2",
-                        line=dict(width=1, color="black")
+
+                        line=dict(
+                            width=1,
+                            color="black"
+                        )
                     ),
+
                     name="Wide"
                 )
             )
@@ -940,13 +939,17 @@ if len(beehive_data) > 0:
                 go.Scatter(
                     x=dismissals['Final Arrival Line'],
                     y=dismissals['Final Arrival Height'],
+
                     mode="markers",
+
                     marker=dict(
                         symbol="x",
                         size=14,
                         color="black",
+
                         line=dict(width=2)
                     ),
+
                     name="Dismissal"
                 )
             )
@@ -955,20 +958,24 @@ if len(beehive_data) > 0:
 
     fig.update_layout(
         height=750,
+
         xaxis=dict(
             range=[x_min_m, x_max_m],
             visible=False
         ),
+
         yaxis=dict(
             range=[y_min_m, y_max_m],
             visible=False
         ),
+
         margin=dict(
             l=0,
             r=0,
             t=20,
             b=20
         ),
+
         dragmode=False
     )
 
@@ -979,9 +986,11 @@ if len(beehive_data) > 0:
     st.plotly_chart(
         fig,
         use_container_width=True,
+
         config={
             "scrollZoom": False,
             "displaylogo": False,
+
             "modeBarButtonsToRemove": [
                 "zoom2d",
                 "select2d",
@@ -1017,8 +1026,30 @@ def in_business_area(line, height, hand):
     return False
 
 # ---------------------------------------------------
-# USE SAME COORDINATES AS BEEHIVE PLOTTING
+# USE SAME COORDINATES AS BEEHIVE
 # ---------------------------------------------------
+
+filtered['Final Arrival Line'] = np.where(
+    filtered['ImpactY'].notna(),
+    filtered['ImpactY'],
+    filtered['Analyst Arrival Line']
+)
+
+filtered['Final Arrival Height'] = np.where(
+    filtered['ImpactZ'].notna(),
+    filtered['ImpactZ'],
+    filtered['Analyst Arrival Height']
+)
+
+filtered['Final Arrival Line'] = (
+    filtered['Final Arrival Line']
+    .clip(-1.83, 1.83)
+)
+
+filtered['Final Arrival Height'] = (
+    filtered['Final Arrival Height']
+    .clip(0, 2.0)
+)
 
 filtered["In Business Area"] = filtered.apply(
     lambda r: in_business_area(
@@ -1050,7 +1081,10 @@ bowler_ba_stats = (
 )
 
 bowler_ba_stats["BA %"] = round(
-    (bowler_ba_stats["BA_Deliveries"] / bowler_ba_stats["Total_Deliveries"]) * 100,
+    (
+        bowler_ba_stats["BA_Deliveries"]
+        / bowler_ba_stats["Total_Deliveries"]
+    ) * 100,
     2
 )
 
@@ -1059,27 +1093,51 @@ bowler_ba_stats["BA %"] = round(
 if len(bowler_ba_stats) > 0:
 
     total_deliveries = bowler_ba_stats["Total_Deliveries"].sum()
+
     total_ba = bowler_ba_stats["BA_Deliveries"].sum()
+
     total_wickets = bowler_ba_stats["Total_Wickets"].sum()
+
     total_ba_wickets = bowler_ba_stats["BA_Wickets"].sum()
 
-    ba_percent = round((total_ba / total_deliveries) * 100, 2) if total_deliveries > 0 else 0
+    ba_percent = round(
+        (total_ba / total_deliveries) * 100,
+        2
+    ) if total_deliveries > 0 else 0
 
     left, center, right = st.columns([1, 2, 1])
 
     with center:
+
         st.markdown(
             f"""
             <div style="text-align:center; margin-top:-15px;">
-                <div style="font-size:20px; font-weight:600; margin-bottom:2px;">
+
+                <div style="
+                    font-size:20px;
+                    font-weight:600;
+                    margin-bottom:2px;
+                ">
                     % of Deliveries in Business Area (BA) / Around Stumps
                 </div>
-                <div style="font-size:48px; font-weight:700; line-height:1;">
+
+                <div style="
+                    font-size:48px;
+                    font-weight:700;
+                    line-height:1;
+                ">
                     {ba_percent}
                 </div>
-                <div style="font-size:28px; color:#555; margin-top:4px;">
-                    {total_ba_wickets}/{total_wickets} Wickets in BA / Around Stumps
+
+                <div style="
+                    font-size:28px;
+                    color:#555;
+                    margin-top:4px;
+                ">
+                    {total_ba_wickets}/{total_wickets}
+                    Wickets in BA / Around Stumps
                 </div>
+
             </div>
             """,
             unsafe_allow_html=True
