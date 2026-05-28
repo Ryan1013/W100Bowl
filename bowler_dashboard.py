@@ -1007,62 +1007,13 @@ else:
 # ---------------------------------------------------
 
 def in_business_area(line, height, hand):
-
     if pd.isna(line) or pd.isna(height) or pd.isna(hand):
         return False
-
     if hand == "RHB":
-
-        return (
-            (height <= 1.0) and
-            (-0.35 <= line <= 0.15)
-        )
-
+        return (height <= 1.0) and (-0.35 <= line <= 0.15)
     elif hand == "LHB":
-
-        return (
-            (height <= 1.0) and
-            (-0.10 <= line <= 0.40)
-        )
-
+        return (height <= 1.0) and (-0.10 <= line <= 0.40)
     return False
-
-# ---------------------------------------------------
-# USE SAME COORDINATES AS BEEHIVE
-# ---------------------------------------------------
-# PRIORITY:
-#
-# 1. ImpactY / ImpactZ (machine tracked)
-# 2. Analyst Arrival Line / Height (fallback)
-# ---------------------------------------------------
-
-filtered['Final Arrival Line'] = np.where(
-    filtered['ImpactY'].notna(),
-    filtered['ImpactY'],
-    filtered['Analyst Arrival Line']
-)
-
-filtered['Final Arrival Height'] = np.where(
-    filtered['ImpactZ'].notna(),
-    filtered['ImpactZ'],
-    filtered['Analyst Arrival Height']
-)
-
-# Optional clipping
-
-filtered['Final Arrival Line'] = (
-    filtered['Final Arrival Line']
-    .clip(-1.83, 1.83)
-)
-
-filtered['Final Arrival Height'] = (
-    filtered['Final Arrival Height']
-    .clip(0, 2.0)
-)
-
-# ---------------------------------------------------
-# BUSINESS AREA FLAGS
-# ---------------------------------------------------
 
 filtered["In Business Area"] = filtered.apply(
     lambda r: in_business_area(
@@ -1074,8 +1025,7 @@ filtered["In Business Area"] = filtered.apply(
 )
 
 filtered["Bowler Wicket in BA"] = (
-    filtered["In Business Area"] &
-    (filtered["Bowler Wicket"] == 1)
+    filtered["In Business Area"] & (filtered["Bowler Wicket"] == 1)
 )
 
 # ---------------------------------------------------
@@ -1094,10 +1044,7 @@ bowler_ba_stats = (
 )
 
 bowler_ba_stats["BA %"] = round(
-    (
-        bowler_ba_stats["BA_Deliveries"]
-        / bowler_ba_stats["Total_Deliveries"]
-    ) * 100,
+    (bowler_ba_stats["BA_Deliveries"] / bowler_ba_stats["Total_Deliveries"]) * 100,
     2
 )
 
@@ -1106,55 +1053,34 @@ bowler_ba_stats["BA %"] = round(
 if len(bowler_ba_stats) > 0:
 
     total_deliveries = bowler_ba_stats["Total_Deliveries"].sum()
-
     total_ba = bowler_ba_stats["BA_Deliveries"].sum()
-
     total_wickets = bowler_ba_stats["Total_Wickets"].sum()
-
     total_ba_wickets = bowler_ba_stats["BA_Wickets"].sum()
 
-    ba_percent = round(
-        (total_ba / total_deliveries) * 100,
-        2
-    ) if total_deliveries > 0 else 0
+    ba_percent = round((total_ba / total_deliveries) * 100, 2) if total_deliveries > 0 else 0
 
-left, center, right = st.columns([1, 2, 1])
+    left, center, right = st.columns([1, 2, 1])
 
-with center:
-
-    st.markdown(
-        f"""
-        <div style="text-align:center; margin-top:-15px;">
-
-            <div style="
-                font-size:20px;
-                font-weight:600;
-                margin-bottom:2px;
-            ">
-                % of Deliveries in Business Area (BA) / Around Stumps
+    with center:
+        st.markdown(
+            f"""
+            <div style="text-align:center; margin-top:-15px;">
+                <div style="font-size:20px; font-weight:600; margin-bottom:2px;">
+                    % of Deliveries in Business Area (BA) / Around Stumps
+                </div>
+                <div style="font-size:48px; font-weight:700; line-height:1;">
+                    {ba_percent}
+                </div>
+                <div style="font-size:28px; color:#555; margin-top:4px;">
+                    {total_ba_wickets}/{total_wickets} Wickets in BA / Around Stumps
+                </div>
             </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-            <div style="
-                font-size:48px;
-                font-weight:700;
-                line-height:1;
-            ">
-                {ba_percent}
-            </div>
-
-            <div style="
-                font-size:28px;
-                color:#555;
-                margin-top:4px;
-            ">
-                {total_ba_wickets}/{total_wickets}
-                Wickets in BA / Around Stumps
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+else:
+    st.info("No Business Area data available.")
 
 # ---------------- VIDEO SECTION ---------------- #
 
